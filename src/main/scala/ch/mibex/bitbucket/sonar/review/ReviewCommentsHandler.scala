@@ -71,7 +71,7 @@ class ReviewCommentsHandler(
 
     val commentsByFileAndLine = mutable.HashMap[String, mutable.Map[Int, PullRequestComment]]()
     var reviewCommentsToBeDeleted = HashMap[Int, PullRequestComment]()
-    val inlineComments = existingReviewComments.filter(_.isInline)
+    val inlineComments = existingReviewComments.filter(_.isInline).filter(!_.isDeleted)
     debugLog(inlineComments)
 
     inlineComments foreach { c =>

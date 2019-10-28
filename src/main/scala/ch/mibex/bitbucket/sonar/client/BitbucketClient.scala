@@ -21,7 +21,7 @@ case class PullRequest(id: Int,
                        dstCommitHash: Option[String])
 
 // global comments do not have a file path, and file-level comments do not require a line number
-case class PullRequestComment(commentId: Int, content: String, line: Option[Int], filePath: Option[String]) {
+case class PullRequestComment(commentId: Int, content: String, line: Option[Int], filePath: Option[String], isDeleted: Boolean) {
   val isInline = line.isDefined && filePath.isDefined
 }
 
@@ -157,11 +157,14 @@ class BitbucketClient(config: SonarBBPluginConfig) {
               val line = comment.get("inline") map {
                 _.asInstanceOf[Map[String, Any]]("to").asInstanceOf[Int]
               }
+              val isDeleted = comment("deleted").asInstanceOf[Boolean]
+
               PullRequestComment(
                 commentId = commentId,
                 content = content,
                 filePath = filePath,
-                line = line
+                line = line,
+                isDeleted = isDeleted
               )
             },
         pageNr = start

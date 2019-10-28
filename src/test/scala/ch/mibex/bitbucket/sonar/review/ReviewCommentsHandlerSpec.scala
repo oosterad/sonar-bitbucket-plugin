@@ -38,7 +38,8 @@ class ReviewCommentsHandlerSpec extends Specification with Mockito {
             |
             |![MAJOR](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/MAJOR.png) **MAJOR**: Either remove or fill this block of code. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS00108)""".stripMargin,
         line = Some(23),
-        filePath = Some("multimod/src/db/src/main/java/ch/mycompany/test/db/App.java")))
+        filePath = Some("multimod/src/db/src/main/java/ch/mycompany/test/db/App.java"),
+        isDeleted = false))
       reviewCommentsCreator.updateComments(pullRequest, issues, existingReviewComments, pullRequestResults)
 
       there was no(bitbucketClient).createPullRequestComment(
@@ -57,7 +58,41 @@ class ReviewCommentsHandlerSpec extends Specification with Mockito {
       )
     }
 
-    "update comment if one already exists on the same file and line " in new ReviewContext {
+    "do create new comments for already existing equivalent comments if they are deleted" in new ReviewContext {
+      val pullRequest = PullRequest(id = 1, srcBranch = "develop", srcCommitHref = None, srcCommitHash = Some("0affee"), dstCommitHash = Some("0affee"))
+      issuesOnChangedLinesFilter.filter(any[PullRequest], any[Seq[PostJobIssue]]) returns issues
+      val existingReviewComments = List(PullRequestComment(
+        commentId = 1,
+        content =
+          """**SonarQube Analysis**
+            |
+            |![BLOCKER](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/BLOCKER.png) **BLOCKER**: Catch Exception instead of Throwable. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS1181)
+            |
+            |![MAJOR](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/MAJOR.png) **MAJOR**: Either log or rethrow this exception. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS1166)
+            |
+            |![MAJOR](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/MAJOR.png) **MAJOR**: Either remove or fill this block of code. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS00108)""".stripMargin,
+        line = Some(23),
+        filePath = Some("multimod/src/db/src/main/java/ch/mycompany/test/db/App.java"),
+        isDeleted = true))
+      reviewCommentsCreator.updateComments(pullRequest, issues, existingReviewComments, pullRequestResults)
+
+      there was one(bitbucketClient).createPullRequestComment(
+        pullRequest,
+        message =
+          """**SonarQube Analysis**
+            |
+            |![BLOCKER](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/BLOCKER.png) **BLOCKER**: Catch Exception instead of Throwable. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS1181)
+            |
+            |![MAJOR](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/MAJOR.png) **MAJOR**: Either log or rethrow this exception. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS1166)
+            |
+            |![MAJOR](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/MAJOR.png) **MAJOR**: Either remove or fill this block of code. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS00108)""".stripMargin,
+        line = Some(23),
+        filePath = Some(
+          "multimod/src/db/src/main/java/ch/mycompany/test/db/App.java")
+      )
+    }
+
+    "update comment if one already exists on the same file and line and is not deleted" in new ReviewContext {
       val pullRequest = PullRequest(id = 1, srcBranch = "develop", srcCommitHref = None, srcCommitHash = Some("0affee"), dstCommitHash = Some("0affee"))
       issuesOnChangedLinesFilter.filter(any[PullRequest], any[Seq[PostJobIssue]]) returns issues
       val existingReviewComments = List(PullRequestComment(
@@ -67,7 +102,8 @@ class ReviewCommentsHandlerSpec extends Specification with Mockito {
             |
             |![MAJOR](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/MAJOR.png) **MAJOR**: Either log or rethrow this exception. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS1166)""".stripMargin,
         line = Some(23),
-        filePath = Some("multimod/src/db/src/main/java/ch/mycompany/test/db/App.java")))
+        filePath = Some("multimod/src/db/src/main/java/ch/mycompany/test/db/App.java"),
+        isDeleted = false))
       reviewCommentsCreator.updateComments(pullRequest, issues, existingReviewComments, pullRequestResults)
 
       there was one(bitbucketClient).updateReviewComment(
@@ -83,6 +119,37 @@ class ReviewCommentsHandlerSpec extends Specification with Mockito {
             |![MAJOR](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/MAJOR.png) **MAJOR**: Either remove or fill this block of code. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS00108)""".stripMargin
       )
     }
+
+
+    "create new comment if the one that already exists on the same file and line is deleted" in new ReviewContext {
+      val pullRequest = PullRequest(id = 1, srcBranch = "develop", srcCommitHref = None, srcCommitHash = Some("0affee"), dstCommitHash = Some("0affee"))
+      issuesOnChangedLinesFilter.filter(any[PullRequest], any[Seq[PostJobIssue]]) returns issues
+      val existingReviewComments = List(PullRequestComment(
+        commentId = 1,
+        content =
+          """**SonarQube Analysis**
+            |
+            |![MAJOR](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/MAJOR.png) **MAJOR**: Either log or rethrow this exception. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS1166)""".stripMargin,
+        line = Some(23),
+        filePath = Some("multimod/src/db/src/main/java/ch/mycompany/test/db/App.java"),
+        isDeleted = true))
+      reviewCommentsCreator.updateComments(pullRequest, issues, existingReviewComments, pullRequestResults)
+
+      there was one(bitbucketClient).createPullRequestComment(
+        pullRequest,
+        message =
+          """**SonarQube Analysis**
+            |
+            |![BLOCKER](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/BLOCKER.png) **BLOCKER**: Catch Exception instead of Throwable. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS1181)
+            |
+            |![MAJOR](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/MAJOR.png) **MAJOR**: Either log or rethrow this exception. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS1166)
+            |
+            |![MAJOR](https://raw.githubusercontent.com/mibexsoftware/sonar-bitbucket-plugin/master/src/main/resources/images/severity/MAJOR.png) **MAJOR**: Either remove or fill this block of code. [[Details]](http://localhost:9000/coding_rules#rule_key=squid%3AS00108)""".stripMargin,
+        line = Some(23),
+        filePath = Some("multimod/src/db/src/main/java/ch/mycompany/test/db/App.java")
+      )
+    }
+
 
     "create comments for all issues found when there are no existing comments" in new ReviewContext {
       val pullRequest = PullRequest(id = 1, srcBranch = "develop", srcCommitHref = None, srcCommitHash =  Some("0affee"), dstCommitHash =  Some("0affee"))
